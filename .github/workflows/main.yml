@@ -116,13 +116,13 @@ jobs:
               npm ci
               npm run frontend
               # Ensure pm2 is running and the correct process is started
-              if pm2 list | grep -q 'dev-Cloudsnip'; then
-                echo "Process 'dev-Cloudsnip' is already running. Restarting..."
-                pm2 restart dev-Cloudsnip --update-env
+              if pm2 list | grep -q 'dev-Cloudsnip-frontend'; then
+                echo "Process 'dev-Cloudsnip-frontend' is already running. Restarting..."
+                pm2 restart dev-Cloudsnip-frontend --update-env
               else
-                echo "Process 'dev-Cloudsnip' not found. Starting new process..."
-                cd ${{ secrets.DEV_DIR }}/backend
-                pm2 start npm --name dev-Cloudsnip -- run dev  # Adjust the path as necessary
+                echo "Process 'dev-Cloudsnip-frontend' not found. Starting new process..."
+                cd ${{ secrets.DEV_DIR }}/frontend
+                pm2 start npm --name dev-Cloudsnip-frontend -- run dev  # Adjust the path as necessary
                 pm2 save --force  # Save the process to be resurrected on reboot
               fi
             fi
