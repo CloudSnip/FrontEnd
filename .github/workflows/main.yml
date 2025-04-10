@@ -1,0 +1,146 @@
+name: Deploy Project with Nginx
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:  # This adds the manual trigger
+
+jobs:
+  deploy:
+    name: Deploy project with Nginx
+    permissions:
+      deployments: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: 'actions/checkout@v2'
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use GITHUB_TOKEN for authentication
+
+      - name: Create GitHub deployment
+        uses: chrnorm/deployment-action@v2
+        id: deployment
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ vars.MY_APP }}
+          environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}  # Set environment dynamically
+
+      - name: Set up SSH Key and Deploy my App on Server
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GITHUB_TOKEN for authentication
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: 22
+          script: |
+            # Using GitHub Token for authentication with private repositories
+            git config --global url."https://${{ secrets.GITHUB_TOKEN }}:@github.com".insteadOf "https://github.com"
+            
+            # Check if the 'frontend' directory is empty or doesn't exist, then clone or pull accordingly.
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              if [ ! -d "${{ secrets.PROD_DIR }}/frontend" ] || [ ! "$(ls -A ${{ secrets.PROD_DIR }}/frontend)" ]; then
+                echo "Cloning production repository..."
+                git clone https://github.com/${{ github.repository }} ${{ secrets.PROD_DIR }}/frontend
+                cd ${{ secrets.PROD_DIR }}/frontend
+                git checkout main
+              else
+                echo "Production backend directory is not empty, pulling latest changes..."
+                cd ${{ secrets.PROD_DIR }}/frontend
+                git pull origin main  # Pull from main for production
+              fi
+
+              # Configure .env file
+              ENV_FILE_CONTENT="
+                      APP_NAME=${{ vars.APP_NAME }}
+                      CLIENT_URL=${{ vars.CLIENT_URL_PROD }}
+                      IP=${{ vars.IP }}
+                      PORT=${{ vars.PORT }}
+                      MASTER_KEY=${{ secrets.MASTER_KEY_PROD }}
+                      JWT_SECRET=${{ secrets.JWT_SECRET_PROD }}
+                      MONGODB_URI=${{ secrets.MONGODB_URI_PROD }}
+                      SECRET_MASTER_URL=${{ secrets.SECRET_MASTER_URL }}
+                      SECRET_MASTER_NAME=${{ secrets.SECRET_MASTER_NAME }}
+                      HOST=${{ secrets.HOST }}
+                    "
+
+              echo "$ENV_FILE_CONTENT" > ${{ secrets.PROD_DIR }}/frontend/.env
+
+              # Deploy the production app
+              npm ci
+              # Ensure pm2 is running and the correct process is started
+              if pm2 list | grep -q 'prod-Cloudsnip-frontend'; then
+                echo "Process 'prod-Cloudsnip-frontend' is already running. Restarting..."
+                pm2 restart prod-Cloudsnip-frontend --update-env
+              else
+                echo "Process 'prod-Cloudsnip-frontend' not found. Starting new process..."
+                cd ${{ secrets.PROD_DIR }}/frontend
+                pm2 start npm --name prod-Cloudsnip-frontend -- run dev  # Adjust the path as necessary
+                pm2 save --force  # Save the process to be resurrected on reboot
+              fi
+
+            elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+              if [ ! -d "${{ secrets.DEV_DIR }}/frontend" ] || [ ! "$(ls -A ${{ secrets.DEV_DIR }}/frontend)" ]; then
+                echo "Cloning development repository..."
+                git clone https://github.com/${{ github.repository }} ${{ secrets.DEV_DIR }}/frontend
+                cd ${{ secrets.DEV_DIR }}/frontend
+                git checkout develop
+              else
+                echo "Development backend directory is not empty, pulling latest changes..."
+                cd ${{ secrets.DEV_DIR }}/frontend
+                git pull origin develop  # Pull from develop for development
+              fi
+
+              # Configure .env file
+              ENV_FILE_CONTENT="
+                      APP_NAME=${{ vars.APP_NAME }}
+                      CLIENT_URL=${{ vars.CLIENT_URL_DEV }}
+                      IP=${{ vars.IP }}
+                      PORT=${{ vars.PORT_DEV }}
+                      MASTER_KEY=${{ secrets.MASTER_KEY_DEV }}
+                      JWT_SECRET=${{ secrets.JWT_SECRET_DEV }}
+                      MONGODB_URI=${{ secrets.MONGODB_URI_DEV }}
+                      SECRET_MASTER_URL=${{ secrets.SECRET_MASTER_URL }}
+                      SECRET_MASTER_NAME=${{ secrets.SECRET_MASTER_NAME }}
+                      HOST=${{ secrets.HOST }}
+                    "
+
+              echo "$ENV_FILE_CONTENT" > ${{ secrets.DEV_DIR }}/frontend/.env
+
+              # Deploy the development app
+              npm ci
+              npm run frontend
+              # Ensure pm2 is running and the correct process is started
+              if pm2 list | grep -q 'dev-Cloudsnip-frontend'; then
+                echo "Process 'dev-Cloudsnip-frontend' is already running. Restarting..."
+                pm2 restart dev-Cloudsnip-frontend --update-env
+              else
+                echo "Process 'dev-Cloudsnip-frontend' not found. Starting new process..."
+                cd ${{ secrets.DEV_DIR }}/frontend
+                pm2 start npm --name dev-Cloudsnip-frontend -- run dev  # Adjust the path as necessary
+                pm2 save --force  # Save the process to be resurrected on reboot
+              fi
+            fi
+
+      - name: Update deployment Status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ vars.MY_APP }}
+          state: 'success'
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ vars.MY_APP }}
+          state: 'failure'
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
