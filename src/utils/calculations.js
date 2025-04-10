@@ -31,3 +31,20 @@ export function calculateHeatIndex(temp, humidity) {
     
     return Math.round(feelsLike * 10) / 10;
   }
+
+export function classificationRules(temp, humidity) {
+  const dewPoint = calculateDewPoint(temp, humidity);
+  const tempDewPointSpread = temp - dewPoint;
+
+  if (humidity < 50 && tempDewPointSpread > 10) {
+    return "Sunny";
+  } else if (humidity >= 50 && humidity <= 80 && tempDewPointSpread > 5 && tempDewPointSpread <= 10) {
+    return "Some clouds";
+  } else if (humidity > 80 && humidity <= 95 && tempDewPointSpread > 2 && tempDewPointSpread <= 5) {
+    return "Overcast";
+  } else if (humidity > 95 && tempDewPointSpread <= 2) {
+    return "Low clouds/fog";
+  } else {
+    return "Unclassified";
+  }
+}

@@ -25,16 +25,7 @@ export default function MenuSidebar({ isOpen, onClose, isDarkMode, toggleTheme }
               </button>
             </div>
             
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-gray-700 dark:text-gray-300">Profile</span>
-                </div>
-              </div>
-              
+            <div className="space-y-6">              
               <div className="flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
                 <div className="flex items-center">
                   <svg className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,14 +55,7 @@ export default function MenuSidebar({ isOpen, onClose, isDarkMode, toggleTheme }
                 </div>
               </div>
               
-              <div className="flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span className="text-gray-700 dark:text-gray-300">Logout</span>
-                </div>
-              </div>
+              
             </div>
             
             <div className="absolute bottom-8 inset-x-0 px-5">

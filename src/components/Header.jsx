@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import API from '../utils/api'
+import API from '../utils/api';
 import LogoLight from '../assets/LogoLight.svg';
 import LogoDark from '../assets/LogoDark.svg';
 
@@ -8,6 +8,7 @@ export default function Header({ onMenuClick, device, isDarkMode, onDeviceChange
   const [showNotifications, setShowNotifications] = useState(false);
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
   const [devices, setDevices] = useState([]);
+  const [allarms, setAllarms] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +24,17 @@ export default function Header({ onMenuClick, device, isDarkMode, onDeviceChange
       }
     };
 
+    const fetchAllarms = async () => {
+      try {
+        const response = await API.get(`/alarms?filter={sensorId=${device._id}}`); // Adjust the endpoint as needed
+        setAllarms(response.data.docs);
+      }catch (error) {
+        console.error('Error fetching devices:', error);
+      }
+    };
+
     fetchDevices();
+    fetchAllarms();
   }, []);
 
   const handleDeviceSelect = (selectedDevice) => {
@@ -32,7 +43,7 @@ export default function Header({ onMenuClick, device, isDarkMode, onDeviceChange
   };
 
   return (
-    <header className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
+    <header className="sticky top-0 z-20  bg-white dark:bg-gray-800 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <img src={isDarkMode?LogoLight:LogoDark} alt="Cloudenip Logo" className="h-8 w-auto" />
@@ -45,7 +56,7 @@ export default function Header({ onMenuClick, device, isDarkMode, onDeviceChange
               className="inline-flex items-center justify-center px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
               aria-label="Select device"
             >
-              {device || 'Select device'}
+              {device.name || 'Select device'}
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -97,9 +108,17 @@ export default function Header({ onMenuClick, device, isDarkMode, onDeviceChange
                 <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-medium text-gray-800 dark:text-white">Notifications</h3>
                 </div>
+              {allarms.length > 0 ? (
+                allarms.map((alarm) => (
+                  <div key={alarm._id} className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                    {alarm.message}
+                  </div>
+                ))
+              ) : (
                 <div className="p-4 text-sm text-gray-600 dark:text-gray-300 text-center">
                   No new notifications
                 </div>
+              )}
               </div>
             )}
           </div>

@@ -6,20 +6,26 @@ import WeatherChart from './components/WeatherChart';
 import DailyForecast from './components/DailyForecast';
 import MenuSidebar from './components/MenuSidebar';
 import React from 'react';
+import API from './utils/api'
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentMetric, setCurrentMetric] = useState('temperature'); // 'temperature' or 'humidity'
   
+  const [device, setDevice] = useState({});
   const [currentWeather, /*setCurrentWeather*/] = useState({
     temp: 23,
     humidity: 65,
-    device: 'San Francisco',
+    device: device,
     date: new Date(),
     conditions: 'Partly Cloudy'
   });
   
+  useEffect(() => {
+    console.log('Current Weather:', device);
+  }, [device]);
+
   const [hourlyData, /*setHourlyData*/] = useState([
     { time: '12 AM', temp: 19, humidity: 72 },
     { time: '2 AM', temp: 18, humidity: 75 },
@@ -45,6 +51,20 @@ function App() {
     { day: 'Sun', temp: 23, humidity: 63, icon: '🌤️' }
   ]);
   
+  useEffect(() => {
+      // Fetch devices from API
+      const fetchMyDevice = async () => {
+        try {
+          const response = await API.get('/measurements?filter={name=esp32_9C9D1C}'); 
+            setDevice(response.data.docs.deviceId);
+        } catch (error) {
+          console.error('Error fetching devices:', error);
+        }
+      };
+
+      fetchMyDevice();
+    }, []);
+
   // Initialize dark mode based on user preference
   useEffect(() => {
     if (localStorage.theme === 'dark' || 
