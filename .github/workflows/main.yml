@@ -55,34 +55,44 @@ jobs:
                 git pull origin main  # Pull from main for production
               fi
 
+              # Install dependencies and build the frontend
+              cd ${{ secrets.PROD_DIR }}/frontend
+              npm ci
+              npm run build
+
               # Configure .env file
               ENV_FILE_CONTENT="
-                      APP_NAME=${{ vars.APP_NAME }}
-                      CLIENT_URL=${{ vars.CLIENT_URL_PROD }}
-                      IP=${{ vars.IP }}
-                      PORT=${{ vars.PORT }}
-                      MASTER_KEY=${{ secrets.MASTER_KEY_PROD }}
-                      JWT_SECRET=${{ secrets.JWT_SECRET_PROD }}
-                      MONGODB_URI=${{ secrets.MONGODB_URI_PROD }}
-                      SECRET_MASTER_URL=${{ secrets.SECRET_MASTER_URL }}
-                      SECRET_MASTER_NAME=${{ secrets.SECRET_MASTER_NAME }}
-                      HOST=${{ secrets.HOST }}
+                      VITE_BASE_URL=${{ vars.BACKEND_URL }}
                     "
 
               echo "$ENV_FILE_CONTENT" > ${{ secrets.PROD_DIR }}/frontend/.env
 
-              # Deploy the production app
-              npm ci
-              # Ensure pm2 is running and the correct process is started
-              if pm2 list | grep -q 'prod-Cloudsnip-frontend'; then
-                echo "Process 'prod-Cloudsnip-frontend' is already running. Restarting..."
-                pm2 restart prod-Cloudsnip-frontend --update-env
-              else
-                echo "Process 'prod-Cloudsnip-frontend' not found. Starting new process..."
-                cd ${{ secrets.PROD_DIR }}/frontend
-                pm2 start npm --name prod-Cloudsnip-frontend -- run dev  # Adjust the path as necessary
-                pm2 save --force  # Save the process to be resurrected on reboot
-              fi
+              # Configure Nginx for production
+              NGINX_CONFIG="
+                server {
+                    listen 80;
+                    server_name ${{ vars.CLIENT_URL_PROD }};
+                    root ${{ secrets.PROD_DIR }}/frontend/dist;
+                    index index.html;
+
+                    location / {
+                        try_files \$uri \$uri/ /index.html;
+                    }
+
+                    location /api {
+                        proxy_pass http://localhost:${{ vars.PORT }};
+                        proxy_http_version 1.1;
+                        proxy_set_header Upgrade \$http_upgrade;
+                        proxy_set_header Connection 'upgrade';
+                        proxy_set_header Host \$host;
+                        proxy_cache_bypass \$http_upgrade;
+                    }
+                }
+              "
+
+              echo "$NGINX_CONFIG" | sudo tee /etc/nginx/sites-available/prod-frontend
+              sudo ln -sf /etc/nginx/sites-available/prod-frontend /etc/nginx/sites-enabled/
+              sudo nginx -t && sudo systemctl restart nginx
 
             elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
               if [ ! -d "${{ secrets.DEV_DIR }}/frontend" ] || [ ! "$(ls -A ${{ secrets.DEV_DIR }}/frontend)" ]; then
@@ -96,35 +106,44 @@ jobs:
                 git pull origin develop  # Pull from develop for development
               fi
 
+              # Install dependencies and build the frontend
+              cd ${{ secrets.DEV_DIR }}/frontend
+              npm ci
+              npm run build
+
               # Configure .env file
               ENV_FILE_CONTENT="
-                      APP_NAME=${{ vars.APP_NAME }}
-                      CLIENT_URL=${{ vars.CLIENT_URL_DEV }}
-                      IP=${{ vars.IP }}
-                      PORT=${{ vars.PORT_DEV }}
-                      MASTER_KEY=${{ secrets.MASTER_KEY_DEV }}
-                      JWT_SECRET=${{ secrets.JWT_SECRET_DEV }}
-                      MONGODB_URI=${{ secrets.MONGODB_URI_DEV }}
-                      SECRET_MASTER_URL=${{ secrets.SECRET_MASTER_URL }}
-                      SECRET_MASTER_NAME=${{ secrets.SECRET_MASTER_NAME }}
-                      HOST=${{ secrets.HOST }}
+                      VITE_BASE_URL=${{ vars.BACKEND_URL }}
                     "
 
               echo "$ENV_FILE_CONTENT" > ${{ secrets.DEV_DIR }}/frontend/.env
 
-              # Deploy the development app
-              npm ci
-              npm run frontend
-              # Ensure pm2 is running and the correct process is started
-              if pm2 list | grep -q 'dev-Cloudsnip-frontend'; then
-                echo "Process 'dev-Cloudsnip-frontend' is already running. Restarting..."
-                pm2 restart dev-Cloudsnip-frontend --update-env
-              else
-                echo "Process 'dev-Cloudsnip-frontend' not found. Starting new process..."
-                cd ${{ secrets.DEV_DIR }}/frontend
-                pm2 start npm --name dev-Cloudsnip-frontend -- run dev  # Adjust the path as necessary
-                pm2 save --force  # Save the process to be resurrected on reboot
-              fi
+              # Configure Nginx for development
+              NGINX_CONFIG="
+                server {
+                    listen 80;
+                    server_name ${{ vars.CLIENT_URL_DEV }};
+                    root ${{ secrets.DEV_DIR }}/frontend/dist;
+                    index index.html;
+
+                    location / {
+                        try_files \$uri \$uri/ /index.html;
+                    }
+
+                    location /api {
+                        proxy_pass http://localhost:${{ vars.PORT_DEV }};
+                        proxy_http_version 1.1;
+                        proxy_set_header Upgrade \$http_upgrade;
+                        proxy_set_header Connection 'upgrade';
+                        proxy_set_header Host \$host;
+                        proxy_cache_bypass \$http_upgrade;
+                    }
+                }
+              "
+
+              echo "$NGINX_CONFIG" | sudo tee /etc/nginx/sites-available/dev-frontend
+              sudo ln -sf /etc/nginx/sites-available/dev-frontend /etc/nginx/sites-enabled/
+              sudo nginx -t && sudo systemctl restart nginx
             fi
 
       - name: Update deployment Status (success)
