@@ -90,8 +90,8 @@ jobs:
                 }
               "
 
-              echo "$NGINX_CONFIG" | sudo tee /etc/nginx/sites-available/prod-frontend
-              sudo ln -sf /etc/nginx/sites-available/prod-frontend /etc/nginx/sites-enabled/
+              echo "$NGINX_CONFIG" | sudo tee /etc/nginx/sites-available/prod.conf
+              sudo ln -sf /etc/nginx/sites-available/prod.conf /etc/nginx/sites-enabled/
               sudo nginx -t && sudo systemctl restart nginx
 
             elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
@@ -141,8 +141,8 @@ jobs:
                 }
               "
 
-              echo "$NGINX_CONFIG" | sudo tee /etc/nginx/sites-available/dev-frontend
-              sudo ln -sf /etc/nginx/sites-available/dev-frontend /etc/nginx/sites-enabled/
+              echo "$NGINX_CONFIG" | sudo tee /etc/nginx/sites-available/dev.conf
+              sudo ln -sf /etc/nginx/sites-available/dev.conf /etc/nginx/sites-enabled/
               sudo nginx -t && sudo systemctl restart nginx
             fi
 
