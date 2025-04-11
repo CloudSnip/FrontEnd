@@ -32,7 +32,7 @@ export default function Header({ onMenuClick, device, isDarkMode, setDevice }) {
     const fetchAllarms = async () => {
       try {
         const response = await API.get(
-          `/alarms?filter={sensorId=${device._id}}`
+          `/alarms?filter={sensorId=${device.deviceId._id}}`
         ); // Adjust the endpoint as needed
         setAlarms(response.data.docs);
       } catch (error) {
@@ -40,7 +40,7 @@ export default function Header({ onMenuClick, device, isDarkMode, setDevice }) {
       }
     };
 
-    if (Object.keys(device).length > 1) {
+    if (device.deviceId && Object.keys(device.deviceId).length > 1) {
       fetchAllarms();
     }
   }, [device]);
@@ -68,7 +68,7 @@ export default function Header({ onMenuClick, device, isDarkMode, setDevice }) {
               className="inline-flex items-center justify-center px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
               aria-label="Select device"
             >
-              {device.name || "Select device"}
+              {device.deviceId?.name || "Select device"}
               <svg
                 className="ml-2 w-4 h-4"
                 fill="none"
