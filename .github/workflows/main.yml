@@ -71,7 +71,7 @@ jobs:
               NGINX_CONFIG="
                 server {
                     listen 80;
-                    server_name ${{ vars.CLIENT_URL_PROD }};
+                    server_name ${{ vars.CLIENT_DOMAIN_PROD }};
                     root ${{ secrets.PROD_DIR }}/frontend/dist;
                     index index.html;
 
@@ -122,7 +122,7 @@ jobs:
               NGINX_CONFIG="
                 server {
                     listen 80;
-                    server_name ${{ vars.CLIENT_URL_DEV }};
+                    server_name ${{ vars.CLIENT_DOMAIN_DEV }};
                     root ${{ secrets.DEV_DIR }}/frontend/dist;
                     index index.html;
 
@@ -131,7 +131,7 @@ jobs:
                     }
 
                     location /api {
-                        proxy_pass http://localhost:${{ vars.PORT_DEV }};
+                        proxy_pass http://localhost:${{ vars.PORT }};
                         proxy_http_version 1.1;
                         proxy_set_header Upgrade \$http_upgrade;
                         proxy_set_header Connection 'upgrade';
