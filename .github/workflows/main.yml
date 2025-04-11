@@ -62,7 +62,7 @@ jobs:
 
               # Configure .env file
               ENV_FILE_CONTENT="
-                      VITE_BASE_URL=${{ vars.BACKEND_URL }}
+                      VITE_BASE_URL=${{ vars.CLIENT_DOMAIN_PROD }}/api
                     "
 
               echo "$ENV_FILE_CONTENT" > ${{ secrets.PROD_DIR }}/frontend/.env
@@ -113,7 +113,7 @@ jobs:
 
               # Configure .env file
               ENV_FILE_CONTENT="
-                      VITE_BASE_URL=${{ vars.BACKEND_URL }}
+                      VITE_BASE_URL=${{ vars.CLIENT_DOMAIN_DEV }}/api
                     "
 
               echo "$ENV_FILE_CONTENT" > ${{ secrets.DEV_DIR }}/frontend/.env
